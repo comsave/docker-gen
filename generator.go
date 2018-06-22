@@ -1,4 +1,4 @@
-package dockergen
+package main
 
 import (
 	"fmt"
@@ -349,108 +349,59 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 		SetServerInfo(apiInfo)
 	}
 
-	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
-		All:  g.All,
-		Size: false,
-	})
-	if err != nil {
-		return nil, err
-	}
+	apiServices, err := g.Client.ListServices(docker.ListServicesOptions{})
 
-	containers := []*RuntimeContainer{}
-	for _, apiContainer := range apiContainers {
-		container, err := g.Client.InspectContainer(apiContainer.ID)
-		if err != nil {
-			log.Printf("Error inspecting container: %s: %s\n", apiContainer.ID, err)
-			continue
-		}
+	nodeInfo, err := g.Client.Info()
 
-		registry, repository, tag := splitDockerImage(container.Config.Image)
+	//log.Fatal(nodeInfo.Swarm.NodeAddr)
+	containers := make([]*RuntimeContainer,0)
+	for _, service := range apiServices {
+		registry, repository, tag := splitDockerImage(service.Spec.TaskTemplate.ContainerSpec.Image) //shop_internet_staging
+
 		runtimeContainer := &RuntimeContainer{
-			ID: container.ID,
+			ID: service.ID,
 			Image: DockerImage{
 				Registry:   registry,
 				Repository: repository,
 				Tag:        tag,
 			},
 			State: State{
-				Running: container.State.Running,
+				Running: true,
 			},
-			Name:         strings.TrimLeft(container.Name, "/"),
-			Hostname:     container.Config.Hostname,
-			Gateway:      container.NetworkSettings.Gateway,
+			Name:         strings.TrimLeft(service.Spec.Name, "/"),
+			Hostname:     service.ID,
+			Gateway:      "",
 			Addresses:    []Address{},
 			Networks:     []Network{},
-			Env:          make(map[string]string),
+			Env:          splitKeyValueSlice(service.Spec.TaskTemplate.ContainerSpec.Env),
 			Volumes:      make(map[string]Volume),
 			Node:         SwarmNode{},
-			Labels:       make(map[string]string),
-			IP:           container.NetworkSettings.IPAddress,
-			IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-			IP6Global:    container.NetworkSettings.GlobalIPv6Address,
+			Labels:       service.Spec.TaskTemplate.ContainerSpec.Labels,
+			IP:           nodeInfo.Swarm.NodeAddr,
+			IP6LinkLocal: "",
+			IP6Global:    "",
 		}
-		for k, v := range container.NetworkSettings.Ports {
+
+		for _, port := range service.Endpoint.Ports {
+
 			address := Address{
-				IP:           container.NetworkSettings.IPAddress,
-				IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-				IP6Global:    container.NetworkSettings.GlobalIPv6Address,
-				Port:         k.Port(),
-				Proto:        k.Proto(),
-			}
-			if len(v) > 0 {
-				address.HostPort = v[0].HostPort
-				address.HostIP = v[0].HostIP
-			}
-			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
-				address)
-
-		}
-		for k, v := range container.NetworkSettings.Networks {
-			network := Network{
-				IP:                  v.IPAddress,
-				Name:                k,
-				Gateway:             v.Gateway,
-				EndpointID:          v.EndpointID,
-				IPv6Gateway:         v.IPv6Gateway,
-				GlobalIPv6Address:   v.GlobalIPv6Address,
-				MacAddress:          v.MacAddress,
-				GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
-				IPPrefixLen:         v.IPPrefixLen,
+				IP:           "",
+				IP6LinkLocal: "",
+				IP6Global:    "",
+				Port:         fmt.Sprint(port.PublishedPort),
+				Proto:        string(port.Protocol),
 			}
 
-			runtimeContainer.Networks = append(runtimeContainer.Networks,
-				network)
-		}
-		for k, v := range container.Volumes {
-			runtimeContainer.Volumes[k] = Volume{
-				Path:      k,
-				HostPath:  v,
-				ReadWrite: container.VolumesRW[k],
-			}
-		}
-		if container.Node != nil {
-			runtimeContainer.Node.ID = container.Node.ID
-			runtimeContainer.Node.Name = container.Node.Name
-			runtimeContainer.Node.Address = Address{
-				IP: container.Node.IP,
-			}
+			runtimeContainer.Addresses = append(runtimeContainer.Addresses, address)
 		}
 
-		for _, v := range container.Mounts {
-			runtimeContainer.Mounts = append(runtimeContainer.Mounts, Mount{
-				Name:        v.Name,
-				Source:      v.Source,
-				Destination: v.Destination,
-				Driver:      v.Driver,
-				Mode:        v.Mode,
-				RW:          v.RW,
-			})
-		}
+		runtimeContainer.Networks = append(runtimeContainer.Networks, Network{
+			IP: nodeInfo.Swarm.NodeAddr,
+		})
 
-		runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
-		runtimeContainer.Labels = container.Config.Labels
 		containers = append(containers, runtimeContainer)
 	}
+
 	return containers, nil
 
 }

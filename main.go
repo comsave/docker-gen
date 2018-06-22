@@ -10,7 +10,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/jwilder/docker-gen"
 )
 
 type stringslice []string
@@ -27,7 +26,7 @@ var (
 	onlyPublished           bool
 	includeStopped          bool
 	configFiles             stringslice
-	configs                 dockergen.ConfigFile
+	configs                 ConfigFile
 	interval                int
 	keepBlankLines          bool
 	endpoint                string
@@ -131,11 +130,11 @@ func main() {
 			}
 		}
 	} else {
-		w, err := dockergen.ParseWait(wait)
+		w, err := ParseWait(wait)
 		if err != nil {
 			log.Fatalf("Error parsing wait interval: %s\n", err)
 		}
-		config := dockergen.Config{
+		config := Config{
 			Template:         flag.Arg(0),
 			Dest:             flag.Arg(1),
 			Watch:            watch,
@@ -152,8 +151,8 @@ func main() {
 		if notifySigHUPContainerID != "" {
 			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
 		}
-		configs = dockergen.ConfigFile{
-			Config: []dockergen.Config{config}}
+		configs = ConfigFile{
+			Config: []Config{config}}
 	}
 
 	all := true
@@ -163,7 +162,7 @@ func main() {
 		}
 	}
 
-	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
+	generator, err := NewGenerator(GeneratorConfig{
 		Endpoint:   endpoint,
 		TLSKey:     tlsKey,
 		TLSCert:    tlsCert,
