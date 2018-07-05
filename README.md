@@ -5,6 +5,23 @@ docker-gen
 [![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=master)](https://travis-ci.org/jwilder/docker-gen)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 
+***This version has been modified to listen to swarm events instead of container events. To listen to swarm events it must run on a manager node***
+
+# Swarm mode requirements
+
+Only swarm managers can retrieve swarm events.
+
+```yml
+version: "3"
+services:
+  web:
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+```
+
+
+
 `docker-gen` is a file generator that renders templates using docker container meta-data.
 
 It can be used to generate various kinds of files for:

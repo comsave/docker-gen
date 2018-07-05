@@ -353,10 +353,9 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 
 	nodeInfo, err := g.Client.Info()
 
-	//log.Fatal(nodeInfo.Swarm.NodeAddr)
 	containers := make([]*RuntimeContainer,0)
 	for _, service := range apiServices {
-		registry, repository, tag := splitDockerImage(service.Spec.TaskTemplate.ContainerSpec.Image) //shop_internet_staging
+		registry, repository, tag := splitDockerImage(service.Spec.TaskTemplate.ContainerSpec.Image)
 
 		runtimeContainer := &RuntimeContainer{
 			ID: service.ID,
