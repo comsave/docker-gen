@@ -5,7 +5,7 @@ docker-gen
 [![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=master)](https://travis-ci.org/jwilder/docker-gen)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 
-***This version has been modified to listen to swarm events instead of container events. To listen to swarm events it must run on a manager node***
+***This version has been modified to listen to swarm events instead of container events. To listen to swarm events it must run on a manager node. If your container exposes multiple ports the lowest port number will be used in the nginx upstream.***
 
 # Swarm mode requirements
 
