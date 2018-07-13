@@ -49,6 +49,9 @@ log_format vhost '$host $remote_addr - $remote_user [$time_local] '
 
 access_log off;
 
+add_header X-REMOTE_ADDR $remote_addr
+add_header X-FORWARD-FOR $proxy_add_x_forwarded_for
+
 {{ if $.Env.RESOLVERS }}
 resolver {{ $.Env.RESOLVERS }};
 {{ end }}
@@ -62,8 +65,12 @@ proxy_buffering off;
 proxy_set_header Host $http_host;
 proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection $proxy_connection;
-proxy_set_header X-Real-IP $remote_addr;
-proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+proxy_set_header X-Real-IP       $proxy_protocol_addr;
+proxy_set_header X-Forwarded-For $proxy_protocol_addr;
+
+#proxy_set_header X-Real-IP $remote_addr;
+#proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Proto $proxy_x_forwarded_proto;
 proxy_set_header X-Forwarded-Ssl $proxy_x_forwarded_ssl;
 proxy_set_header X-Forwarded-Port $proxy_x_forwarded_port;
@@ -171,7 +178,7 @@ server {
 
 server {
 	server_name {{ $host }};
-	listen 443 ssl http2 {{ $default_server }};
+	listen 443 ssl http2 {{ $default_server }} proxy_protocol;
 	{{ if $enable_ipv6 }}
 	listen [::]:443 ssl http2 {{ $default_server }};
 	{{ end }}
@@ -206,6 +213,8 @@ server {
 	{{ else if (exists "/etc/nginx/vhost.d/default") }}
 	include /etc/nginx/vhost.d/default;
 	{{ end }}
+
+	real_ip_header proxy_protocol;
 
 	location / {
 		{{ if eq $proto "uwsgi" }}
