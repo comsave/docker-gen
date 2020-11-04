@@ -224,10 +224,11 @@ server {
 		fastcgi_pass {{ trim $upstream_name }};
 		{{ else }}
 		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        proxy_read_timeout 600;
-        send_timeout 600;
+    proxy_connect_timeout       605;
+    proxy_send_timeout          605;
+    proxy_read_timeout          605;
+    send_timeout                605;
+    keepalive_timeout           605;
 		{{ end }}
 
 		{{ if (exists (printf "/etc/nginx/htpasswd/%s" $host)) }}
@@ -275,10 +276,11 @@ server {
 		fastcgi_pass {{ trim $upstream_name }};
 		{{ else }}
 		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
-        proxy_read_timeout 600;
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        client_body_timeout 600;
+    proxy_connect_timeout       605;
+    proxy_send_timeout          605;
+    proxy_read_timeout          605;
+    send_timeout                605;
+    keepalive_timeout           605;
 		{{ end }}
 		{{ if (exists (printf "/etc/nginx/htpasswd/%s" $host)) }}
 		auth_basic	"Restricted {{ $host }}";
